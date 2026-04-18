@@ -6,9 +6,11 @@ import FiltersBar from "./components/FiltersBar";
 import DetailDrawer from "./components/DetailDrawer";
 import MiniMap from "./components/MiniMap";
 import CaseSummary from "./components/CaseSummary";
+import PodoRouteStrip from "./components/PodoRouteStrip";
 import { useJotformSubmissions } from "./hooks/useJotformSubmissions";
 import {
   buildCaseSummary,
+  buildPodoRoute,
   deriveInvestigation,
   sortByTimeDesc,
   submissionMatchesSearch,
@@ -28,6 +30,8 @@ export default function App() {
     () => buildCaseSummary(submissions, suspects),
     [submissions, suspects],
   );
+
+  const podoRoute = useMemo(() => buildPodoRoute(submissions), [submissions]);
 
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [search, setSearch] = useState("");
@@ -107,6 +111,13 @@ export default function App() {
             onSelectSuspect={handleSelect}
             onOpenSighting={handleOpenCard}
           />
+          {!selectedPerson && (
+            <PodoRouteStrip
+              route={podoRoute}
+              openedId={openedId}
+              onSelect={handleOpenCard}
+            />
+          )}
           <FiltersBar
             search={search}
             onSearchChange={setSearch}

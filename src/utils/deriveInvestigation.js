@@ -160,6 +160,20 @@ export function buildCaseSummary(submissions, suspects) {
   };
 }
 
+export function buildPodoRoute(submissions) {
+  if (!submissions || submissions.length === 0) return [];
+  const podoSubs = submissions.filter(podoInStructuredFields);
+  const ordered = sortByTimeDesc(podoSubs).reverse();
+  return ordered.map((submission, index) => ({
+    step: index + 1,
+    submission,
+    location: submission.location || "Unknown",
+    time: submission.eventTime || submission.createdAt || "",
+    companions: structuredCompanions(submission),
+    isLast: index === ordered.length - 1,
+  }));
+}
+
 export function submissionMentionsPerson(submission, personName) {
   if (!personName) return false;
   const target = normalizeName(personName);
