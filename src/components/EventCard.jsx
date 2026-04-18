@@ -92,13 +92,19 @@ export default function EventCard({ submission, onSelect, active }) {
         )}
 
         {priority && (
-          <Badge
-            color={PRIORITY_COLORS[priority] || "gray"}
-            variant="outline"
-            size="sm"
+          <Tooltip
+            label="Self-reported urgency/confidence from the original submission"
+            withArrow
           >
-            {priority}
-          </Badge>
+            <Badge
+              color={PRIORITY_COLORS[priority] || "gray"}
+              variant="outline"
+              size="sm"
+              style={{ alignSelf: "flex-start", cursor: "help" }}
+            >
+              {priority}
+            </Badge>
+          </Tooltip>
         )}
       </Stack>
     </Paper>

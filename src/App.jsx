@@ -3,12 +3,14 @@ import {
   AppShell,
   Badge,
   Group,
+  Image,
   Stack,
   Text,
   Title,
   Tooltip,
   UnstyledButton,
 } from "@mantine/core";
+import mascot from "./assets/mascot.png";
 import SuspectsPanel from "./components/SuspectsPanel";
 import EventFeed from "./components/EventFeed";
 import FiltersBar from "./components/FiltersBar";
@@ -90,7 +92,7 @@ export default function App() {
 
   return (
     <AppShell
-      header={{ height: 64 }}
+      header={{ height: 128 }}
       navbar={{ width: 320, breakpoint: "sm" }}
       padding="md"
     >
@@ -100,17 +102,27 @@ export default function App() {
             <UnstyledButton
               onClick={handleResetView}
               aria-label="Reset to overview"
-              style={{ borderRadius: 6, padding: "4px 6px" }}
+              style={{ borderRadius: 10, padding: "4px 8px" }}
             >
-              <Group gap="xs">
-                <Title order={4}>Missing Podo</Title>
-                <Text c="dimmed" size="sm">
-                  The Ankara Case
-                </Text>
+              <Group gap="md" wrap="nowrap">
+                <Image
+                  src={mascot}
+                  h={104}
+                  w="auto"
+                  fit="contain"
+                  radius="md"
+                  alt="Jotform mascot"
+                />
+                <Stack gap={2}>
+                  <Title order={2}>Missing Podo</Title>
+                  <Text c="dimmed" size="md">
+                    The Ankara Case
+                  </Text>
+                </Stack>
               </Group>
             </UnstyledButton>
           </Tooltip>
-          <Badge color="yellow" variant="light">
+          <Badge color="yellow" variant="light" size="xl">
             Investigation
           </Badge>
         </Group>
@@ -127,7 +139,7 @@ export default function App() {
         />
       </AppShell.Navbar>
 
-      <AppShell.Main>
+      <AppShell.Main style={{ backgroundColor: "#faf9f5" }}>
         <Stack gap="md">
           <CaseSummary
             summary={caseSummary}
