@@ -3,6 +3,7 @@ import {
   MapContainer,
   Marker,
   Polyline,
+  Popup,
   TileLayer,
   Tooltip as MapTooltip,
   useMap,
@@ -42,32 +43,277 @@ function toTime(s) {
   return Number.isNaN(d) ? 0 : d;
 }
 
-export default function MiniMap({ submissions, focusName, onSelect }) {
+function coordKey(lat, lng) {
+  return `${lat.toFixed(5)},${lng.toFixed(5)}`;
+}
+
+function numberedIcon({ step, count = 1, isLast, active }) {
+  const bg = active ? "#339af0" : isLast ? "#fa5252" : "#fab005";
+  const border = active ? "#1c7ed6" : isLast ? "#c92a2a" : "#e67700";
+  const size = active ? 32 : 28;
+  const badge =
+    count > 1
+      ? `<div style="
+          position:absolute;top:-4px;right:-8px;
+          background:#fff;color:#222;border:1.5px solid ${border};
+          border-radius:10px;padding:0 5px;
+          font-size:10px;font-weight:700;line-height:14px;
+          font-family:system-ui,sans-serif;
+          box-shadow:0 1px 2px rgba(0,0,0,0.25);
+        ">×${count}</div>`
+      : "";
+  const html = `<div style="position:relative;width:${size}px;height:${size}px;">
+    <div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${bg};color:#fff;border:2px solid ${border};
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;font-size:12px;font-family:system-ui,sans-serif;
+      box-shadow:0 1px 3px rgba(0,0,0,0.45);
+    ">${step}</div>
+    ${badge}
+  </div>`;
+  return L.divIcon({
+    html,
+    className: "podo-step-marker",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    tooltipAnchor: [0, -size / 2],
+  });
+}
+
+function groupRouteStops(stops) {
+  const groups = new Map();
+  for (const stop of stops) {
+    const { lat, lng } = stop.submission.coordinates;
+    const key = coordKey(lat, lng);
+    if (!groups.has(key)) groups.set(key, { key, lat, lng, stops: [] });
+    groups.get(key).stops.push(stop);
+  }
+  return [...groups.values()].map((g) => {
+    const sorted = [...g.stops].sort((a, b) => a.step - b.step);
+    return {
+      ...g,
+      stops: sorted,
+      maxStep: sorted[sorted.length - 1].step,
+      isLast: sorted.some((s) => s.isLast),
+      location: sorted[0].location,
+    };
+  });
+}
+
+function groupPlainSubmissions(submissions) {
+  const groups = new Map();
+  for (const s of submissions) {
+    const { lat, lng } = s.coordinates;
+    const key = coordKey(lat, lng);
+    if (!groups.has(key)) groups.set(key, { key, lat, lng, submissions: [] });
+    groups.get(key).submissions.push(s);
+  }
+  return [...groups.values()].map((g) => {
+    const sorted = [...g.submissions].sort((a, b) => toTime(a) - toTime(b));
+    return { ...g, submissions: sorted, location: sorted[0].location };
+  });
+}
+
+function RouteStopPicker({ group, onSelect }) {
+  const map = useMap();
+  return (
+    <div style={{ fontSize: 12, minWidth: 220 }}>
+      <div style={{ fontWeight: 700, marginBottom: 2 }}>
+        {group.location || "Unknown location"}
+      </div>
+      <div style={{ color: "#666", marginBottom: 8 }}>
+        {group.stops.length} stops here · pick one to investigate
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {group.stops.map((stop) => (
+          <button
+            key={stop.submission.id}
+            type="button"
+            onClick={() => {
+              onSelect && onSelect(stop.submission);
+              map.closePopup();
+            }}
+            style={{
+              textAlign: "left",
+              padding: "6px 8px",
+              borderRadius: 6,
+              border: "1px solid #e9ecef",
+              background: stop.isLast ? "#fff5f5" : "#fff",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontSize: 12,
+              lineHeight: 1.35,
+            }}
+          >
+            <div style={{ fontWeight: 600 }}>
+              Stop {stop.step}
+              {stop.isLast ? " · last known" : ""} ·{" "}
+              <span style={{ color: "#666", fontWeight: 400 }}>
+                {stop.time}
+              </span>
+            </div>
+            <div style={{ color: "#666" }}>
+              {stop.companions.length > 0
+                ? `w/ ${stop.companions.join(", ")}`
+                : "alone"}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PlainSubmissionPicker({ group, onSelect }) {
+  const map = useMap();
+  return (
+    <div style={{ fontSize: 12, minWidth: 220 }}>
+      <div style={{ fontWeight: 700, marginBottom: 2 }}>
+        {group.location || "Unknown location"}
+      </div>
+      <div style={{ color: "#666", marginBottom: 8 }}>
+        {group.submissions.length} reports here · pick one to investigate
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {group.submissions.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => {
+              onSelect && onSelect(s);
+              map.closePopup();
+            }}
+            style={{
+              textAlign: "left",
+              padding: "6px 8px",
+              borderRadius: 6,
+              border: "1px solid #e9ecef",
+              background: "#fff",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontSize: 12,
+              lineHeight: 1.35,
+            }}
+          >
+            <div style={{ fontWeight: 600 }}>
+              {s.person || "Unknown"}
+              {s.relatedPerson ? ` · ${s.relatedPerson}` : ""}
+            </div>
+            <div style={{ color: "#666" }}>
+              {s.formName} · {s.eventTime || s.createdAt}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RouteTooltip({ group }) {
+  const steps = group.stops.map((s) => s.step).join(", ");
+  return (
+    <MapTooltip direction="top" offset={[0, -6]} opacity={0.95}>
+      <div style={{ fontSize: 12, lineHeight: 1.4 }}>
+        <strong>{group.location || "Unknown location"}</strong>
+        {group.isLast ? " · last known" : ""}
+        <br />
+        <span style={{ color: "#666" }}>
+          {group.stops.length > 1
+            ? `Stops ${steps} · click to pick`
+            : `Stop ${steps} · click to open`}
+        </span>
+      </div>
+    </MapTooltip>
+  );
+}
+
+function PlainTooltip({ group }) {
+  const count = group.submissions.length;
+  const first = group.submissions[0];
+  return (
+    <MapTooltip direction="top" offset={[0, -30]} opacity={0.95}>
+      <div style={{ fontSize: 12, lineHeight: 1.4 }}>
+        <strong>{group.location || first.location || "Unknown"}</strong>
+        <br />
+        {count > 1 ? (
+          <span style={{ color: "#666" }}>
+            {count} reports here · click to pick
+          </span>
+        ) : (
+          <>
+            <span>
+              {first.person || "Unknown"}
+              {first.relatedPerson ? ` · ${first.relatedPerson}` : ""}
+            </span>
+            <br />
+            <span style={{ color: "#666" }}>
+              {first.formName} · {first.eventTime || first.createdAt}
+            </span>
+          </>
+        )}
+      </div>
+    </MapTooltip>
+  );
+}
+
+export default function MiniMap({
+  submissions,
+  route,
+  focusName,
+  openedId,
+  onSelect,
+}) {
+  const routeStops = useMemo(() => {
+    if (!route || route.length === 0) return [];
+    return route.filter((stop) => stop.submission.coordinates);
+  }, [route]);
+
+  const useRouteMode = routeStops.length > 0;
+
+  const routeGroups = useMemo(
+    () => (useRouteMode ? groupRouteStops(routeStops) : []),
+    [useRouteMode, routeStops],
+  );
+
   const withCoords = useMemo(
     () => submissions.filter((s) => s.coordinates),
     [submissions],
   );
 
-  const positions = useMemo(
-    () => withCoords.map((s) => [s.coordinates.lat, s.coordinates.lng]),
-    [withCoords],
+  const plainGroups = useMemo(
+    () => (useRouteMode ? [] : groupPlainSubmissions(withCoords)),
+    [useRouteMode, withCoords],
   );
 
+  const positions = useMemo(() => {
+    if (useRouteMode) return routeGroups.map((g) => [g.lat, g.lng]);
+    return plainGroups.map((g) => [g.lat, g.lng]);
+  }, [useRouteMode, routeGroups, plainGroups]);
+
   const sortedPath = useMemo(() => {
+    if (useRouteMode) {
+      return routeStops.map((stop) => [
+        stop.submission.coordinates.lat,
+        stop.submission.coordinates.lng,
+      ]);
+    }
     const sorted = [...withCoords].sort((a, b) => toTime(a) - toTime(b));
     return sorted.map((s) => [s.coordinates.lat, s.coordinates.lng]);
-  }, [withCoords]);
+  }, [useRouteMode, routeStops, withCoords]);
 
-  if (withCoords.length === 0) return null;
+  const plottedCount = useRouteMode ? routeStops.length : withCoords.length;
+
+  if (plottedCount === 0) return null;
 
   return (
     <Paper withBorder radius="md" p="xs">
       <Group justify="space-between" px="xs" pb="xs">
         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-          Map · {focusName}
+          {useRouteMode ? `Map · ${focusName}'s route` : `Map · ${focusName}`}
         </Text>
         <Badge variant="light" size="sm">
-          {withCoords.length} plotted
+          {plottedCount} {useRouteMode ? "stops" : "plotted"}
         </Badge>
       </Group>
       <div
@@ -102,32 +348,71 @@ export default function MiniMap({ submissions, focusName, onSelect }) {
               }}
             />
           )}
-          {withCoords.map((s) => (
-            <Marker
-              key={`${s.formId}-${s.id}`}
-              position={[s.coordinates.lat, s.coordinates.lng]}
-              eventHandlers={{
-                click: () => onSelect && onSelect(s),
-              }}
-            >
-              <MapTooltip direction="top" offset={[0, -30]} opacity={0.95}>
-                <div style={{ fontSize: 12, lineHeight: 1.4 }}>
-                  <strong>{s.person || "Unknown"}</strong>
-                  {s.relatedPerson ? ` · ${s.relatedPerson}` : ""}
-                  <br />
-                  <span style={{ color: "#666" }}>
-                    {s.formName} · {s.eventTime || s.createdAt}
-                  </span>
-                  {s.location && (
-                    <>
-                      <br />
-                      <span>{s.location}</span>
-                    </>
+
+          {useRouteMode &&
+            routeGroups.map((group) => {
+              const active = group.stops.some(
+                (s) => s.submission.id === openedId,
+              );
+              const single = group.stops.length === 1;
+              return (
+                <Marker
+                  key={`route-${group.key}`}
+                  position={[group.lat, group.lng]}
+                  icon={numberedIcon({
+                    step: group.maxStep,
+                    count: group.stops.length,
+                    isLast: group.isLast,
+                    active,
+                  })}
+                  zIndexOffset={active ? 1000 : group.isLast ? 500 : 0}
+                  eventHandlers={
+                    single
+                      ? {
+                          click: () =>
+                            onSelect && onSelect(group.stops[0].submission),
+                        }
+                      : undefined
+                  }
+                >
+                  <RouteTooltip group={group} />
+                  {!single && (
+                    <Popup maxWidth={280} closeButton>
+                      <RouteStopPicker group={group} onSelect={onSelect} />
+                    </Popup>
                   )}
-                </div>
-              </MapTooltip>
-            </Marker>
-          ))}
+                </Marker>
+              );
+            })}
+
+          {!useRouteMode &&
+            plainGroups.map((group) => {
+              const single = group.submissions.length === 1;
+              return (
+                <Marker
+                  key={`plain-${group.key}`}
+                  position={[group.lat, group.lng]}
+                  eventHandlers={
+                    single
+                      ? {
+                          click: () =>
+                            onSelect && onSelect(group.submissions[0]),
+                        }
+                      : undefined
+                  }
+                >
+                  <PlainTooltip group={group} />
+                  {!single && (
+                    <Popup maxWidth={280} closeButton>
+                      <PlainSubmissionPicker
+                        group={group}
+                        onSelect={onSelect}
+                      />
+                    </Popup>
+                  )}
+                </Marker>
+              );
+            })}
         </MapContainer>
       </div>
     </Paper>

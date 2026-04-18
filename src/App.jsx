@@ -1,5 +1,14 @@
 import { useMemo, useState } from "react";
-import { AppShell, Badge, Group, Stack, Text, Title } from "@mantine/core";
+import {
+  AppShell,
+  Badge,
+  Group,
+  Stack,
+  Text,
+  Title,
+  Tooltip,
+  UnstyledButton,
+} from "@mantine/core";
 import SuspectsPanel from "./components/SuspectsPanel";
 import EventFeed from "./components/EventFeed";
 import FiltersBar from "./components/FiltersBar";
@@ -69,6 +78,12 @@ export default function App() {
     setSearch("");
     setSelectedForms([]);
   };
+  const handleResetView = () => {
+    setSelectedPerson(null);
+    setSearch("");
+    setSelectedForms([]);
+    setOpenedId(null);
+  };
 
   const hasActiveFilters =
     Boolean(search.trim()) || selectedForms.length > 0;
@@ -81,12 +96,20 @@ export default function App() {
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
-          <Group gap="xs">
-            <Title order={4}>Missing Podo</Title>
-            <Text c="dimmed" size="sm">
-              The Ankara Case
-            </Text>
-          </Group>
+          <Tooltip label="Reset to overview" openDelay={400}>
+            <UnstyledButton
+              onClick={handleResetView}
+              aria-label="Reset to overview"
+              style={{ borderRadius: 6, padding: "4px 6px" }}
+            >
+              <Group gap="xs">
+                <Title order={4}>Missing Podo</Title>
+                <Text c="dimmed" size="sm">
+                  The Ankara Case
+                </Text>
+              </Group>
+            </UnstyledButton>
+          </Tooltip>
           <Badge color="yellow" variant="light">
             Investigation
           </Badge>
@@ -126,7 +149,9 @@ export default function App() {
           />
           <MiniMap
             submissions={feedSubmissions}
+            route={!selectedPerson ? podoRoute : null}
             focusName={focusName}
+            openedId={openedId}
             onSelect={handleOpenCard}
           />
           <EventFeed
