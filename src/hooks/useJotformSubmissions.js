@@ -81,7 +81,7 @@ function normalizeSubmission(raw, form) {
 
 async function fetchFormSubmissionsWithKey(formId, apiKey) {
   const { data } = await axios.get(`${JOTFORM_API_URL}/form/${formId}/submissions`, {
-    params: { apiKey },
+    params: { apiKey, limit: 1000 },
   });
 
   if (data?.responseCode && data.responseCode !== 200) {
