@@ -14,6 +14,7 @@ Please fill in your information after forking this repository:
 Node.js 18 or higher ,
 npm,
 Git.
+
 1.Enter Project Folder
 cd 2026-frontend-challenge-ankara
 
