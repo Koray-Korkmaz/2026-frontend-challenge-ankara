@@ -25,7 +25,7 @@ function formatWhen(submission) {
   }).format(d);
 }
 
-export default function EventCard({ submission, onSelect }) {
+export default function EventCard({ submission, onSelect, active }) {
   const {
     formName,
     person,
@@ -42,7 +42,11 @@ export default function EventCard({ submission, onSelect }) {
       p="md"
       radius="md"
       onClick={onSelect ? () => onSelect(submission) : undefined}
-      style={{ cursor: onSelect ? "pointer" : "default" }}
+      style={{
+        cursor: onSelect ? "pointer" : "default",
+        borderColor: active ? "var(--mantine-color-yellow-5)" : undefined,
+        backgroundColor: active ? "var(--mantine-color-yellow-0)" : undefined,
+      }}
     >
       <Stack gap="xs">
         <Group justify="space-between" wrap="nowrap">

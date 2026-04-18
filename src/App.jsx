@@ -52,6 +52,14 @@ export default function App() {
   const handleOpenCard = (submission) => setOpenedId(submission.id);
   const handleCloseDrawer = () => setOpenedId(null);
   const handleSelectLinked = (submission) => setOpenedId(submission.id);
+  const handleClearFocus = () => setSelectedPerson(null);
+  const handleClearFilters = () => {
+    setSearch("");
+    setSelectedForms([]);
+  };
+
+  const hasActiveFilters =
+    Boolean(search.trim()) || selectedForms.length > 0;
 
   return (
     <AppShell
@@ -95,10 +103,14 @@ export default function App() {
           <EventFeed
             submissions={feedSubmissions}
             selectedPerson={selectedPerson}
+            openedId={openedId}
             isLoading={isLoading}
             isError={isError}
             error={error}
             onCardSelect={handleOpenCard}
+            onClearFocus={handleClearFocus}
+            onClearFilters={handleClearFilters}
+            hasActiveFilters={hasActiveFilters}
           />
         </Stack>
       </AppShell.Main>

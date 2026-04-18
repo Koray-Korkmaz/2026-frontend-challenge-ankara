@@ -8,6 +8,7 @@ import {
   Stack,
   Text,
   Title,
+  Tooltip,
   UnstyledButton,
 } from "@mantine/core";
 
@@ -33,11 +34,20 @@ function SuspectRow({ suspect, active, onSelect }) {
           <Text size="xs" c="dimmed" truncate>
             {suspect.forms.length} source{suspect.forms.length === 1 ? "" : "s"}
             {suspect.locations[0] ? ` • ${suspect.locations[0]}` : ""}
+            {` • ${suspect.encounters} record${suspect.encounters === 1 ? "" : "s"}`}
           </Text>
         </Stack>
-        <Badge color="red" variant={suspect.podoEncounters > 0 ? "filled" : "light"}>
-          {suspect.podoEncounters}
-        </Badge>
+        <Tooltip
+          label={`${suspect.podoEncounters} with Podo · ${suspect.encounters} total`}
+          withArrow
+        >
+          <Badge
+            color="red"
+            variant={suspect.podoEncounters > 0 ? "filled" : "light"}
+          >
+            {suspect.podoEncounters}
+          </Badge>
+        </Tooltip>
       </Group>
     </UnstyledButton>
   );
@@ -79,7 +89,7 @@ export default function SuspectsPanel({
       </Group>
 
       <Text size="xs" c="dimmed">
-        Ranked by co-occurrences with Podo.
+        Red badge: co-occurrences with Podo.
       </Text>
 
       <ScrollArea style={{ flex: 1 }}>

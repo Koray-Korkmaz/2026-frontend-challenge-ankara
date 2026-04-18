@@ -1,4 +1,4 @@
-import { Chip, CloseButton, Group, TextInput } from "@mantine/core";
+import { Button, Chip, CloseButton, Group, TextInput } from "@mantine/core";
 import { JOTFORM_FORMS } from "../hooks/useJotformSubmissions";
 
 export default function FiltersBar({
@@ -7,6 +7,13 @@ export default function FiltersBar({
   selectedForms,
   onSelectedFormsChange,
 }) {
+  const hasAny = Boolean(search.trim()) || selectedForms.length > 0;
+
+  const handleClear = () => {
+    onSearchChange("");
+    onSelectedFormsChange([]);
+  };
+
   return (
     <Group gap="md" align="center" wrap="wrap">
       <TextInput
@@ -38,6 +45,12 @@ export default function FiltersBar({
           ))}
         </Group>
       </Chip.Group>
+
+      {hasAny && (
+        <Button size="xs" variant="subtle" color="gray" onClick={handleClear}>
+          Clear filters
+        </Button>
+      )}
     </Group>
   );
 }
