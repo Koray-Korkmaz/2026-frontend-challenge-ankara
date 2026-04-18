@@ -6,7 +6,9 @@ export function normalizeName(name) {
     .trim()
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+\p{L}\.?$/u, "")
+    .trim();
 }
 
 function diacriticRichness(name) {
