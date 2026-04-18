@@ -1,5 +1,22 @@
 const PODO = "podo";
 
+export function normalizeName(name) {
+  if (!name) return "";
+  return String(name)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function diacriticRichness(name) {
+  let count = 0;
+  for (const c of String(name)) {
+    if (c.charCodeAt(0) > 127) count += 1;
+  }
+  return count;
+}
+
 function splitNames(value) {
   if (!value) return [];
   return String(value)
@@ -26,11 +43,12 @@ export function deriveInvestigation(submissions = []) {
 
   for (const sub of submissions) {
     const mentioned = getMentionedPeople(sub);
-    const keys = new Set(mentioned.map((n) => n.toLowerCase()));
+    const keys = new Set(mentioned.map(normalizeName));
     const hasPodo = keys.has(PODO);
 
     for (const name of mentioned) {
-      const key = name.toLowerCase();
+      const key = normalizeName(name);
+      if (!key) continue;
       if (!peopleByKey.has(key)) {
         peopleByKey.set(key, {
           name,
@@ -40,10 +58,12 @@ export function deriveInvestigation(submissions = []) {
           locations: new Set(),
           lastSeenAt: null,
           submissionIds: [],
+          variants: new Map(),
         });
       }
 
       const person = peopleByKey.get(key);
+      person.variants.set(name, (person.variants.get(name) || 0) + 1);
       person.encounters += 1;
       if (hasPodo && key !== PODO) person.podoEncounters += 1;
       if (sub.formName) person.forms.add(sub.formName);
@@ -57,14 +77,30 @@ export function deriveInvestigation(submissions = []) {
     }
   }
 
-  const people = [...peopleByKey.values()].map((p) => ({
-    ...p,
-    forms: [...p.forms],
-    locations: [...p.locations],
-  }));
+  const people = [...peopleByKey.values()].map((p) => {
+    let bestName = p.name;
+    let bestCount = -1;
+    for (const [variant, count] of p.variants) {
+      const better =
+        count > bestCount ||
+        (count === bestCount &&
+          diacriticRichness(variant) > diacriticRichness(bestName));
+      if (better) {
+        bestName = variant;
+        bestCount = count;
+      }
+    }
+    return {
+      ...p,
+      name: bestName,
+      variants: [...p.variants.keys()],
+      forms: [...p.forms],
+      locations: [...p.locations],
+    };
+  });
 
   const suspects = people
-    .filter((p) => p.name.toLowerCase() !== PODO)
+    .filter((p) => normalizeName(p.name) !== PODO)
     .sort(
       (a, b) =>
         b.podoEncounters - a.podoEncounters || b.encounters - a.encounters,
@@ -75,9 +111,9 @@ export function deriveInvestigation(submissions = []) {
 
 export function submissionMentionsPerson(submission, personName) {
   if (!personName) return false;
-  const target = personName.toLowerCase();
+  const target = normalizeName(personName);
   return getMentionedPeople(submission).some(
-    (n) => n.toLowerCase() === target,
+    (n) => normalizeName(n) === target,
   );
 }
 
@@ -92,13 +128,13 @@ export function sortByTimeDesc(submissions) {
 export function getLinkedSubmissions(submission, allSubmissions) {
   if (!submission) return [];
   const targetNames = new Set(
-    getMentionedPeople(submission).map((n) => n.toLowerCase()),
+    getMentionedPeople(submission).map(normalizeName),
   );
   if (targetNames.size === 0) return [];
   return allSubmissions
     .filter((s) => s.id !== submission.id)
     .filter((s) =>
-      getMentionedPeople(s).some((n) => targetNames.has(n.toLowerCase())),
+      getMentionedPeople(s).some((n) => targetNames.has(normalizeName(n))),
     );
 }
 
