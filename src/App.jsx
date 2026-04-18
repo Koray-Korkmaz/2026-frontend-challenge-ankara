@@ -4,6 +4,7 @@ import SuspectsPanel from "./components/SuspectsPanel";
 import EventFeed from "./components/EventFeed";
 import FiltersBar from "./components/FiltersBar";
 import DetailDrawer from "./components/DetailDrawer";
+import MiniMap from "./components/MiniMap";
 import { useJotformSubmissions } from "./hooks/useJotformSubmissions";
 import {
   deriveInvestigation,
@@ -99,6 +100,11 @@ export default function App() {
             onSearchChange={setSearch}
             selectedForms={selectedForms}
             onSelectedFormsChange={setSelectedForms}
+          />
+          <MiniMap
+            submissions={feedSubmissions}
+            focusName={focusName}
+            onSelect={handleOpenCard}
           />
           <EventFeed
             submissions={feedSubmissions}
