@@ -8,7 +8,7 @@ function splitNames(value) {
     .filter(Boolean);
 }
 
-function getMentionedPeople(submission) {
+export function getMentionedPeople(submission) {
   const names = new Set();
 
   if (submission.person) names.add(submission.person.trim());
@@ -71,4 +71,20 @@ export function deriveInvestigation(submissions = []) {
     );
 
   return { submissions, people, suspects };
+}
+
+export function submissionMentionsPerson(submission, personName) {
+  if (!personName) return false;
+  const target = personName.toLowerCase();
+  return getMentionedPeople(submission).some(
+    (n) => n.toLowerCase() === target,
+  );
+}
+
+export function sortByTimeDesc(submissions) {
+  return [...submissions].sort((a, b) => {
+    const aWhen = a.createdAt || a.eventTime || "";
+    const bWhen = b.createdAt || b.eventTime || "";
+    return String(bWhen).localeCompare(String(aWhen));
+  });
 }

@@ -1,8 +1,13 @@
 import { useMemo, useState } from "react";
 import { AppShell, Badge, Group, Text, Title } from "@mantine/core";
 import SuspectsPanel from "./components/SuspectsPanel";
+import EventFeed from "./components/EventFeed";
 import { useJotformSubmissions } from "./hooks/useJotformSubmissions";
-import { deriveInvestigation } from "./utils/deriveInvestigation";
+import {
+  deriveInvestigation,
+  sortByTimeDesc,
+  submissionMentionsPerson,
+} from "./utils/deriveInvestigation";
 
 export default function App() {
   const { data: submissions = [], isLoading, isError, error } =
@@ -14,6 +19,15 @@ export default function App() {
   );
 
   const [selectedPerson, setSelectedPerson] = useState(null);
+
+  const focusName = selectedPerson?.name || "Podo";
+
+  const feedSubmissions = useMemo(() => {
+    const filtered = submissions.filter((s) =>
+      submissionMentionsPerson(s, focusName),
+    );
+    return sortByTimeDesc(filtered);
+  }, [submissions, focusName]);
 
   const handleSelect = (person) => {
     setSelectedPerson((current) =>
@@ -53,19 +67,13 @@ export default function App() {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Title order={6} c="dimmed" tt="uppercase" mb="sm">
-          Events
-        </Title>
-        {selectedPerson ? (
-          <Text size="sm" c="dimmed">
-            Selected: <strong>{selectedPerson.name}</strong> — event feed coming
-            next.
-          </Text>
-        ) : (
-          <Text size="sm" c="dimmed">
-            The chain of Podo's sightings will appear here.
-          </Text>
-        )}
+        <EventFeed
+          submissions={feedSubmissions}
+          selectedPerson={selectedPerson}
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+        />
       </AppShell.Main>
     </AppShell>
   );
