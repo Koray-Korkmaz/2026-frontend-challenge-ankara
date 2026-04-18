@@ -5,8 +5,10 @@ import EventFeed from "./components/EventFeed";
 import FiltersBar from "./components/FiltersBar";
 import DetailDrawer from "./components/DetailDrawer";
 import MiniMap from "./components/MiniMap";
+import CaseSummary from "./components/CaseSummary";
 import { useJotformSubmissions } from "./hooks/useJotformSubmissions";
 import {
+  buildCaseSummary,
   deriveInvestigation,
   sortByTimeDesc,
   submissionMatchesSearch,
@@ -20,6 +22,11 @@ export default function App() {
   const { suspects } = useMemo(
     () => deriveInvestigation(submissions),
     [submissions],
+  );
+
+  const caseSummary = useMemo(
+    () => buildCaseSummary(submissions, suspects),
+    [submissions, suspects],
   );
 
   const [selectedPerson, setSelectedPerson] = useState(null);
@@ -95,6 +102,11 @@ export default function App() {
 
       <AppShell.Main>
         <Stack gap="md">
+          <CaseSummary
+            summary={caseSummary}
+            onSelectSuspect={handleSelect}
+            onOpenSighting={handleOpenCard}
+          />
           <FiltersBar
             search={search}
             onSearchChange={setSearch}

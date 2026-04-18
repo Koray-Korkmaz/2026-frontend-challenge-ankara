@@ -111,6 +111,55 @@ export function deriveInvestigation(submissions = []) {
   return { submissions, people, suspects };
 }
 
+function podoInStructuredFields(s) {
+  if (normalizeName(s.person) === PODO) return true;
+  return splitNames(s.relatedPerson).some((n) => normalizeName(n) === PODO);
+}
+
+function structuredCompanions(s) {
+  const out = [];
+  if (s.person && normalizeName(s.person) !== PODO) out.push(s.person);
+  for (const n of splitNames(s.relatedPerson)) {
+    if (normalizeName(n) !== PODO) out.push(n);
+  }
+  return [...new Set(out)];
+}
+
+export function buildCaseSummary(submissions, suspects) {
+  if (!submissions || submissions.length === 0) return null;
+
+  const podoSubs = submissions.filter(podoInStructuredFields);
+
+  const lastSighting = sortByTimeDesc(podoSubs)[0] || null;
+
+  const lastCompanions = lastSighting
+    ? structuredCompanions(lastSighting)
+    : [];
+
+  const locationCounts = new Map();
+  for (const s of podoSubs) {
+    if (!s.location) continue;
+    locationCounts.set(s.location, (locationCounts.get(s.location) || 0) + 1);
+  }
+  let hotspot = null;
+  let hotspotCount = 0;
+  for (const [loc, count] of locationCounts) {
+    if (count > hotspotCount) {
+      hotspot = loc;
+      hotspotCount = count;
+    }
+  }
+
+  return {
+    totalRecords: submissions.length,
+    totalSuspects: suspects.length,
+    topSuspect: suspects[0] || null,
+    lastSighting,
+    lastCompanions,
+    hotspot: hotspot ? { name: hotspot, count: hotspotCount } : null,
+  };
+}
+
 export function submissionMentionsPerson(submission, personName) {
   if (!personName) return false;
   const target = normalizeName(personName);
@@ -119,12 +168,28 @@ export function submissionMentionsPerson(submission, personName) {
   );
 }
 
+function parseEventTime(str) {
+  if (!str) return 0;
+  const match = String(str).match(
+    /^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})/,
+  );
+  if (match) {
+    const [, dd, mm, yyyy, hh, min] = match;
+    const t = new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:00`).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  }
+  const iso = Date.parse(str);
+  return Number.isNaN(iso) ? 0 : iso;
+}
+
+function submissionTimeMs(s) {
+  return parseEventTime(s.eventTime) || parseEventTime(s.createdAt) || 0;
+}
+
 export function sortByTimeDesc(submissions) {
-  return [...submissions].sort((a, b) => {
-    const aWhen = a.createdAt || a.eventTime || "";
-    const bWhen = b.createdAt || b.eventTime || "";
-    return String(bWhen).localeCompare(String(aWhen));
-  });
+  return [...submissions].sort(
+    (a, b) => submissionTimeMs(b) - submissionTimeMs(a),
+  );
 }
 
 export function getLinkedSubmissions(submission, allSubmissions) {
