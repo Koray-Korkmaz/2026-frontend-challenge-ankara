@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
-import { AppShell, Badge, Group, Text, Title } from "@mantine/core";
+import { AppShell, Badge, Group, Stack, Text, Title } from "@mantine/core";
 import SuspectsPanel from "./components/SuspectsPanel";
 import EventFeed from "./components/EventFeed";
+import FiltersBar from "./components/FiltersBar";
 import { useJotformSubmissions } from "./hooks/useJotformSubmissions";
 import {
   deriveInvestigation,
   sortByTimeDesc,
+  submissionMatchesSearch,
   submissionMentionsPerson,
 } from "./utils/deriveInvestigation";
 
@@ -19,15 +21,20 @@ export default function App() {
   );
 
   const [selectedPerson, setSelectedPerson] = useState(null);
+  const [search, setSearch] = useState("");
+  const [selectedForms, setSelectedForms] = useState([]);
 
   const focusName = selectedPerson?.name || "Podo";
 
   const feedSubmissions = useMemo(() => {
-    const filtered = submissions.filter((s) =>
-      submissionMentionsPerson(s, focusName),
-    );
+    const filtered = submissions
+      .filter((s) => submissionMentionsPerson(s, focusName))
+      .filter((s) =>
+        selectedForms.length === 0 ? true : selectedForms.includes(s.formName),
+      )
+      .filter((s) => submissionMatchesSearch(s, search));
     return sortByTimeDesc(filtered);
-  }, [submissions, focusName]);
+  }, [submissions, focusName, selectedForms, search]);
 
   const handleSelect = (person) => {
     setSelectedPerson((current) =>
@@ -67,13 +74,21 @@ export default function App() {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <EventFeed
-          submissions={feedSubmissions}
-          selectedPerson={selectedPerson}
-          isLoading={isLoading}
-          isError={isError}
-          error={error}
-        />
+        <Stack gap="md">
+          <FiltersBar
+            search={search}
+            onSearchChange={setSearch}
+            selectedForms={selectedForms}
+            onSelectedFormsChange={setSelectedForms}
+          />
+          <EventFeed
+            submissions={feedSubmissions}
+            selectedPerson={selectedPerson}
+            isLoading={isLoading}
+            isError={isError}
+            error={error}
+          />
+        </Stack>
       </AppShell.Main>
     </AppShell>
   );

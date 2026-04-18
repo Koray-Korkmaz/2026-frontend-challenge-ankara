@@ -88,3 +88,19 @@ export function sortByTimeDesc(submissions) {
     return String(bWhen).localeCompare(String(aWhen));
   });
 }
+
+export function submissionMatchesSearch(submission, rawQuery) {
+  const query = (rawQuery || "").trim().toLowerCase();
+  if (!query) return true;
+  const haystack = [
+    submission.person,
+    submission.relatedPerson,
+    submission.location,
+    submission.message,
+    submission.formName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(query);
+}

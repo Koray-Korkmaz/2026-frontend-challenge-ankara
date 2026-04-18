@@ -19,7 +19,18 @@ Three pieces make the investigation story land:
 
 Everything is driven by search + filters.
 
+Math behind submission for eample Kağan's 11 enteries we aggragate:
 
+Checkins
+Kağan himself checked in
+Messages
+Kağan is sender or recipient
+Sightings
+Kağan is the person being observed or the person someone was "seen with"
+Personal Notes
+Kağan wrote the note or is listed in mentionedPeople
+Anonymous Tips
+Kağan is named as the suspect
 
 
 Mantine `AppShell` for the frame (header + navbar).
@@ -50,7 +61,7 @@ We'll add one pure derived helper: deriveInvestigation(submissions) that returns
 
 
 
-## Explicitly out of scope (for now)
+Explicitly out of scope (for now)
 - Map / Leaflet
 - Proper timeline visualization (we'll use a vertical card list sorted by time)
 - Fuzzy name matching — exact match on trimmed lowercase name is enough for this dataset
