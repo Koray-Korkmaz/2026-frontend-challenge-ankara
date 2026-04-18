@@ -3,6 +3,7 @@ import { AppShell, Badge, Group, Stack, Text, Title } from "@mantine/core";
 import SuspectsPanel from "./components/SuspectsPanel";
 import EventFeed from "./components/EventFeed";
 import FiltersBar from "./components/FiltersBar";
+import DetailDrawer from "./components/DetailDrawer";
 import { useJotformSubmissions } from "./hooks/useJotformSubmissions";
 import {
   deriveInvestigation,
@@ -23,6 +24,7 @@ export default function App() {
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [search, setSearch] = useState("");
   const [selectedForms, setSelectedForms] = useState([]);
+  const [openedId, setOpenedId] = useState(null);
 
   const focusName = selectedPerson?.name || "Podo";
 
@@ -36,11 +38,20 @@ export default function App() {
     return sortByTimeDesc(filtered);
   }, [submissions, focusName, selectedForms, search]);
 
+  const openedSubmission = useMemo(
+    () => submissions.find((s) => s.id === openedId) || null,
+    [submissions, openedId],
+  );
+
   const handleSelect = (person) => {
     setSelectedPerson((current) =>
       current?.name.toLowerCase() === person.name.toLowerCase() ? null : person,
     );
   };
+
+  const handleOpenCard = (submission) => setOpenedId(submission.id);
+  const handleCloseDrawer = () => setOpenedId(null);
+  const handleSelectLinked = (submission) => setOpenedId(submission.id);
 
   return (
     <AppShell
@@ -87,9 +98,18 @@ export default function App() {
             isLoading={isLoading}
             isError={isError}
             error={error}
+            onCardSelect={handleOpenCard}
           />
         </Stack>
       </AppShell.Main>
+
+      <DetailDrawer
+        submission={openedSubmission}
+        allSubmissions={submissions}
+        opened={Boolean(openedSubmission)}
+        onClose={handleCloseDrawer}
+        onSelectLinked={handleSelectLinked}
+      />
     </AppShell>
   );
 }

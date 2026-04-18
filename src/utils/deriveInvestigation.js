@@ -89,6 +89,19 @@ export function sortByTimeDesc(submissions) {
   });
 }
 
+export function getLinkedSubmissions(submission, allSubmissions) {
+  if (!submission) return [];
+  const targetNames = new Set(
+    getMentionedPeople(submission).map((n) => n.toLowerCase()),
+  );
+  if (targetNames.size === 0) return [];
+  return allSubmissions
+    .filter((s) => s.id !== submission.id)
+    .filter((s) =>
+      getMentionedPeople(s).some((n) => targetNames.has(n.toLowerCase())),
+    );
+}
+
 export function submissionMatchesSearch(submission, rawQuery) {
   const query = (rawQuery || "").trim().toLowerCase();
   if (!query) return true;

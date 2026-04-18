@@ -5,6 +5,19 @@ Scope of UI
 - Keep components small, avoid unnecessary abstractions.
 - One data hook, one normalizer, clear naming.
 
+API Structure:
+
+Fields per form (what lives under `answers`)
+
+| Form | Primary person | Secondary person | Content | Extra |
+|---|---|---|---|---|
+| **Checkins** (`261065067494966`) | `personName` | — | `note` | — |
+| **Messages** (`261065765723966`) | `senderName` | `recipientName` | `text` | `urgency` |
+| **Sightings** (`261065244786967`) | `personName` | `seenWith` | `note` | — |
+| **Personal Notes** (`261065509008958`) | `authorName` | `mentionedPeople` | `note` | — |
+| **Anonymous Tips** (`261065875889981`) | `suspectName` | — | `tip` | `confidence`, `submissionDate` |
+
+Common across all 5: `timestamp` (event time), `location`, `coordinates` (`"lat,lng"` string).
 
 
 Product concept
